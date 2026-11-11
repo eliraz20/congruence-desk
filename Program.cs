@@ -2,9 +2,10 @@ using System.Globalization;
 using System.Numerics;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-if (args.Length != 1 || args[0] == "--help")
+bool trace = args.Length==2 && args[1]=="--trace";
+if ((args.Length != 1 && !trace) || args[0] == "--help")
 {
-    Console.WriteLine("Usage: dotnet run -- <input-file|->  (see example.tsv for linear, quad, conic and system)");
+    Console.WriteLine("Usage: dotnet run -- <input-file|-> [--trace]  (linear, quad, checkquad, conic and system)");
     return args.Length == 1 ? 0 : 2;
 }
 
@@ -31,6 +32,28 @@ try
         if (queries > 1) Console.WriteLine();
         switch (tokens[0])
         {
+            case "checkquad":
+            {
+                if(tokens.Length<5) throw new FormatException("Use checkquad a b c modulus followed by proposed roots.");
+                var v=Numbers(tokens[1..5],4);
+                int modulus=LimitedModulus(v[3],1_000_000);
+                var proposed=tokens[5..].Select(s=>Modular.Mod(BigInteger.Parse(s),modulus)).ToHashSet();
+                var classes=Quadratics.Solve(v[0],v[1],v[2],modulus);
+                var invalid=proposed.Where(x=>Modular.Mod(v[0]*x*x+v[1]*x+v[2],modulus)!=0).Order().ToArray();
+                BigInteger total=0;foreach(var cls in classes) total+=modulus/cls.Period;
+                var missing=total-(proposed.Count-invalid.Length);
+                Console.WriteLine($"Distinct candidates {proposed.Count}; invalid {invalid.Length}; missing {missing}.");
+                foreach(var x in invalid.Take(8)) Console.WriteLine($"  {x} gives remainder {Modular.Mod(v[0]*x*x+v[1]*x+v[2],modulus)}");
+                if(missing>0) {
+                    var examples=new List<BigInteger>();
+                    foreach(var cls in classes) {
+                        for(var x=cls.Value;x<modulus && examples.Count<8;x+=cls.Period)if(!proposed.Contains(x))examples.Add(x);
+                        if(examples.Count==8)break;
+                    }
+                    Console.WriteLine("  Missing examples: "+string.Join(", ",examples));
+                }
+                break;
+            }
             case "quad":
             {
                 var v = Numbers(tokens[1..], 4);
@@ -67,7 +90,7 @@ try
                     rows.Add(Numbers(row, variables + 1));
                 }
                 if (rows.Count == 0) throw new FormatException("A system needs at least one equation.");
-                LinearSystem.Print(rows, variables, config[0]);
+                LinearSystem.Print(rows, variables, config[0], trace);
                 break;
             }
             default:

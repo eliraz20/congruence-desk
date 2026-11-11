@@ -7,6 +7,7 @@ sealed class LinearSystem
     private readonly BigInteger[] rhs;
     private readonly int width;
     private readonly BigInteger modulus;
+    private bool trace;
 
     private LinearSystem(List<BigInteger[]> rows, int width, BigInteger modulus)
     {
@@ -23,9 +24,10 @@ sealed class LinearSystem
         for (int j = 0; j < width; j++) basis[j, j] = 1;
     }
 
-    public static void Print(List<BigInteger[]> rows, int width, BigInteger modulus)
+    public static void Print(List<BigInteger[]> rows, int width, BigInteger modulus, bool trace)
     {
         var system = new LinearSystem(rows, width, modulus);
+        system.trace=trace;
         int rank = system.Diagonalize();
         system.PrintFamily(rank);
     }
@@ -50,6 +52,7 @@ sealed class LinearSystem
                 {
                     if (matrix[i, pivot].IsZero) continue;
                     var q = matrix[i, pivot] / matrix[pivot, pivot];
+                    if(trace && q!=0) Console.WriteLine($"R{i+1} <- R{i+1} - {q} R{pivot+1} (mod {modulus})");
                     for (int j = pivot; j < width; j++)
                         matrix[i, j] = Modular.Mod(matrix[i, j] - q * matrix[pivot, j], modulus);
                     rhs[i] = Modular.Mod(rhs[i] - q * rhs[pivot], modulus);
@@ -64,6 +67,7 @@ sealed class LinearSystem
                 {
                     if (matrix[pivot, j].IsZero) continue;
                     var q = matrix[pivot, j] / matrix[pivot, pivot];
+                    if(trace && q!=0) Console.WriteLine($"C{j+1} <- C{j+1} - {q} C{pivot+1} (mod {modulus})");
                     for (int i = pivot; i < rhs.Length; i++)
                         matrix[i, j] = Modular.Mod(matrix[i, j] - q * matrix[i, pivot], modulus);
                     for (int i = 0; i < width; i++)
@@ -89,6 +93,7 @@ sealed class LinearSystem
     private void SwapRows(int a, int b)
     {
         if (a == b) return;
+        if(trace)Console.WriteLine($"Swap R{a+1} and R{b+1}");
         for (int j = 0; j < width; j++)
             (matrix[a, j], matrix[b, j]) = (matrix[b, j], matrix[a, j]);
         (rhs[a], rhs[b]) = (rhs[b], rhs[a]);
@@ -97,6 +102,7 @@ sealed class LinearSystem
     private void SwapColumns(int a, int b)
     {
         if (a == b) return;
+        if(trace)Console.WriteLine($"Swap C{a+1} and C{b+1}");
         for (int i = 0; i < rhs.Length; i++)
             (matrix[i, a], matrix[i, b]) = (matrix[i, b], matrix[i, a]);
         for (int i = 0; i < width; i++)

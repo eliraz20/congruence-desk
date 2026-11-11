@@ -38,3 +38,30 @@ The first row gives x + y + z ≡ 3. The second gives y + z ≡ 2 (mod 3). There
 - Two-variable quadratic queries examine each x and apply the quadratic solver to y. Their modulus can be 1 through 512. Linear systems support any number of variables that fit in memory.
 
 Run `dotnet run --project checks/Checks.csproj` from this folder to check the CLI against direct enumeration of 1,770 small solution sets.
+
+## Check your own roots
+
+Run `dotnet run -- verify.tsv --trace`. A `checkquad a b c m` row followed by your candidate residues checks whether your list is complete, reports invalid and missing counts and gives up to eight examples of each. The same file demonstrates the optional row and column operation trace for systems. Compare it with your handwritten reduction to locate a differing step.
+
+## When to use it
+
+A number theory student wants feedback on their own candidate roots, including an example they missed.
+
+Example result:
+
+```text
+Distinct candidates 3; invalid 1; missing 2.
+  2 gives remainder 3
+  Missing examples: 5, 3
+
+R2 <- R2 - 2 R1 (mod 6)
+C2 <- C2 - 1 C1 (mod 6)
+Swap C2 and C1
+R2 <- R2 - 1 R1 (mod 6)
+C2 <- C2 - 2 C1 (mod 6)
+Base = (5, 3) modulo 6
+  + t1 * (3, 0), 0 <= t1 < 2
+2 distinct solution(s)
+```
+
+Related course or field workflow: [UC Davis number theory problem set](https://www.math.ucdavis.edu/~efuchs/115B/115BHW3.pdf).
